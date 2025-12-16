@@ -40,6 +40,7 @@ KernelGraphGenerator::KernelGraphGenerator(
   preprocess(computation_graph);
 }
 
+// 把所有计算图的Operator的输出tensor组成all_tensors
 template <typename GraphType>
 std::vector<typename GraphType::TensorType>
     get_all_tensors(GraphType const &g) {
@@ -136,11 +137,14 @@ void KernelGraphGenerator::generate_next_operator(
   if (num_total_states % 100 == 1) {
     show_statistics();
   }
+
+// 评估当前计算图是否与目标计算图相同，如果相同则直接返回
   if (verify(c)) {
     verified_graphs.push_back(SerializedSearchContext(c));
     return;
   }
 
+// 开启一个新的线程来做generate_next_operator
   if (!is_a_new_thread_start && search_depth <= multithread_threshold_depth) {
     SearchContext c_copied = SerializedSearchContext(c).deserialize();
 #if !defined(MIRAGE_FINGERPRINT_USE_CPU) || defined(MIRAGE_USE_FORMAL_VERIFIER)
@@ -177,20 +181,23 @@ void KernelGraphGenerator::generate_next_operator(
       return;
     }
     std::vector<DTensor> all_tensors = get_all_tensors(*c.kn_graph);
+    // 寻找接下来的Op
     for (type::KNOperatorType op_type : dim_strategy.get_knop_cand()) {
       if (op_type != type::KNOperatorType::KN_CUSTOMIZED_OP) {
         // Case K2: generate a pre-defined kernel operator
         for (auto const &input_idx :
              dim_strategy.get_input_cand_idx(op_type, all_tensors)) {
+          // 跳过不合法的顺序
           if (!check_order(input_idx, op_type, *c.kn_graph)) {
             continue;
           }
           std::vector<DTensor> input_tensors = vector_map(
               input_idx, [&](int index) { return all_tensors[index]; });
+          // 判断使用该Op能否推导出目标表达式的子表达式
           if (!infer_and_check_abstract_expr(input_tensors, op_type)) {
             continue;
           }
-
+          // 生成新的Op放入计算图中，因为是深搜，所以要在当前分支深搜结束后进行回溯
           KNOperator *old_last_op = c.kn_graph->operators.back();
           KNOperator *new_op = create_op(*c.kn_graph, op_type, input_tensors);
           if (new_op) {
@@ -205,6 +212,7 @@ void KernelGraphGenerator::generate_next_operator(
         }
       } else {
         // Case K3: generate a graph-def kernel operator
+        // 处理逻辑与上面生成预定义的kernel operator类似，不过还做了grid block dim层面的搜索以及循环切分的搜索
         if (count_op_of_type(type::KNOperatorType::KN_CUSTOMIZED_OP,
                              *c.kn_graph) >=
             config.max_num_threadblock_graphs) {

@@ -36,6 +36,7 @@ struct DimStrategy {
   std::vector<std::vector<int>> get_binary_input(int num_tensors);
   std::vector<std::vector<int>> get_nary_input(int num_tensors, int n);
 
+// 根据Op type和输入张量size，来判断候选的inputtensor的所有的排列组合，比如如果我有10个input tensor，对于一个unary op，我就有10种候选的input tensor的排列组合，对于一个binary op，我就有90种候选的input tensor的排列组合，以此类推。
   template <typename OpType, typename TensorType>
   std::vector<std::vector<int>>
       get_input_cand_idx(OpType op_type,

@@ -373,7 +373,7 @@ std::vector<int> DimStrategy::get_forloop_range_cand(
     }
   }
   if (no_use) {
-    return {1};
+    return {1}; 
   }
 
   std::vector<int> forloop_range_to_explore = config.frange_to_explore;
