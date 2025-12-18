@@ -180,6 +180,8 @@ void KernelGraphGenerator::generate_next_operator(
     if (c.kn_graph->operators.size() >= config.max_num_kernel_graph_op) {
       return;
     }
+    // 寻找output_tensors作为下一个operator的输入，一开始的output_tensors就是定义的new_input的tensor。
+    // 在最高层的new_input定义的张量，默认都是input_operator的output_tensors。
     std::vector<DTensor> all_tensors = get_all_tensors(*c.kn_graph);
     // 寻找接下来的Op
     for (type::KNOperatorType op_type : dim_strategy.get_knop_cand()) {
@@ -267,7 +269,7 @@ void KernelGraphGenerator::generate_next_operator(
                       if (input_op == nullptr) {
                         input_created = false;
                         break;
-                      }
+                      } 
                       c.tb_graph->operators.push_back(input_op);
                     }
                     if (input_created) {
@@ -330,6 +332,8 @@ void KernelGraphGenerator::generate_next_operator(
     };
 
     // Case B1. Finish and return to kernel-level search
+    // 当完成了一个tb的搜索之后，需要生成一个新的kernel operator节点，调用create_customized_op，其中包含对现在的tb_graph的遍历，
+    // 在customized op中会创建一个新的tb_graph
     if (!output_tensors.empty()) {
       for (int3 output_map : dim_strategy.get_output_map_cand(
                output_tensors, c.tb_graph->grid_dim)) {

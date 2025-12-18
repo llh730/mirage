@@ -125,6 +125,13 @@ public:
              TranspilerConfig const &config,
              vector<vector<size_t>> const &input_strides);
 
+  // 包含以下步骤：
+  // 1. 解析多GPU分布式配置
+  // 2. 收集DTensor元数据
+  // 3. 规划算子融合
+  // 4. 决定张量布局
+  // 5. 规划DTensor内存分配
+  // 6. 生成CUDA代码
   TranspileResult generate_code() {
     this->resolve_distributed_config();
     this->resolve_dtensor_meta();

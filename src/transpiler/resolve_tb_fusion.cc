@@ -7,6 +7,13 @@ namespace mirage {
 namespace transpiler {
 
 // Decide when and how to fuse operators in every threadblock level op
+// 限定了fused融合的条件：
+// 1. 必须有单一的消费者
+// 2. 必须是elementwise unary或forloop_accum_no_red 与之前的算子融合
+// 3. 之前算子不能是INPUT OP，因为INPUT OP可能会采用异步数据加载或分块处理
+// 4. 之前算子不能是forloop_accum之类的，因为这类在循环体内
+// 5. 之前算子不能是max，因为max归约有复杂内部状态
+// 融合会构成一条链，比如{Matmul → Exp → Square → Store}，这条链上的op，对应的chain_leading_op都是Matmul，fusion_chain[Matmul]对应这条链。
 void Transpiler::resolve_tb_fusion() {
   for (kn::KNOperator *const op : g->operators) {
     if (op->op_type != type::KN_CUSTOMIZED_OP) {

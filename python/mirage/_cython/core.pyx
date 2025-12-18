@@ -1251,6 +1251,7 @@ def search(CyKNGraph input_graph, *, str backend = "cuda", int max_num_new_graph
 
 # Generate CUDA program for a uGraph
 # Return (CUDA code, buffer size in bytes)
+# 
 def generate_cuda_program(CyKNGraph input_graph, *, int target_cc, list input_strides, int num_warp_groups = -1, int pipeline_stages = -1, bool profiling = False, bool enable_online_softmax = False) -> dict:
     # Set transpiler_config
     cdef TranspilerConfig transpiler_config
